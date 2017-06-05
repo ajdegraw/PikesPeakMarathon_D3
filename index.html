@@ -1,0 +1,234 @@
+<html>
+  <meta charset = "utf-8">
+  <script src="./d3.v3.min.js"></script>
+  <script src="./d3-timer.v1.min.js"></script>
+<style>
+.axis path,
+.axis line {
+  fill: none;
+  stroke: black;
+  shape-rendering: crispEdges;
+}
+
+</style>
+
+<body>
+
+
+</body>
+  <script type="text/javascript">
+  var summary_data;
+  var avg_data;
+
+    var width = 600,
+        height = 400,
+        top_margin = 75,
+        left_margin = 75,
+        bottom_margin = 75,
+        right_margin = 75,
+        canvas_top = top_margin,
+        canvas_bottom = height - bottom_margin,
+        canvas_left = left_margin,
+        canvas_right = width - right_margin;
+
+    var canvas_width = width - right_margin - left_margin;
+    var canvas_height = height - top_margin - bottom_margin;
+    var vertical_shelf = height - top_margin;
+
+    //x scale axis
+    var xScale = d3.scale.linear()
+                .domain([10,85])
+                .range([canvas_left, canvas_right]);
+
+    var yScale = d3.scale.linear()
+                .domain([0,60])
+                .range([canvas_bottom, canvas_top]);
+    var y_rt_Scale = d3.scale.linear()
+                .domain([0,10])
+                .range([canvas_bottom, canvas_top]);
+
+    var y_rt_Axis = d3.svg.axis().scale(y_rt_Scale).orient("right");
+    var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+    var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+    var svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
+
+    svg.append("rect")
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("fill", "rgb(224,224,224");
+
+    svg.append("g")
+          .attr("transform", "translate(0,"+yScale(0)+")")
+          .attr("class", "axis")
+          .call(xAxis.ticks(10))//;
+          .append("text")
+            .attr("x", (left_margin + canvas_width) / 2)
+            .attr("y", bottom_margin / 2)
+            .text("AGE (years)");
+        //y-axis
+    svg.append("g")
+          .attr("transform", "translate("+ canvas_left +",0)")
+          .attr("class", "axis")
+          .call(yAxis.ticks(10))//;
+          .append("text")
+            .attr("x", 0)
+            .attr("y", -20)
+            .attr("transform", "translate(0,0)rotate(-90)")
+            .text("Percent of Runners");
+
+
+        //y-axis
+        svg.append("g")
+          .attr("transform", "translate("+ canvas_right +",0)")
+          .attr("class", "axis")
+          .call(y_rt_Axis.ticks(10))//;
+          .append("text")
+          .attr("x", 0)
+          .attr("y", -20)
+          .attr("transform", "translate(" + 20 + "," + y_rt_Scale(8) + ")rotate(90)")
+          .attr("fill", "blue")
+          .text("Average Time (hours)");
+
+      g = svg.append("g").attr("transform", "translate(0,0)");
+
+function update(data, year){
+
+  var transition_duration = 1500;
+
+  d3.select("#year"+(year-1))
+              .remove();
+  d3.select("#year"+2016).remove();
+
+  svg.append("text")
+              .attr("id", "year"+year)
+              .attr("x", xScale(20))
+              .attr("y", yScale(65))
+              .attr("font-size", 30)
+              .text("Pikes Peak Marathon "+String(year)); 
+  
+      filtered_data = data.filter(function(d){ return d.YEAR == year;});
+      count_data = filtered_data.map(function(d){ return {AGE_GROUP: d.AGE_GROUP, AGE_GROUP_COUNT: d.AGE_GROUP_COUNT};});
+      //debugger;
+
+
+    //x scale axis
+TOTAL_RUNNERS = d3.sum(filtered_data, function(d){return d.AGE_GROUP_COUNT;});
+  var t = d3.transition()
+      .duration(transition_duration);
+
+  // JOIN new data with old elements.
+  var rects = g.selectAll("rect")
+    .data(count_data);//, function(d, i){return i;});//, function(d) { return d; });
+
+  // EXIT old elements not present in new data.
+  rects.exit()
+      .attr("class", "exit")
+    .transition(t)
+      .attr("height", 0)
+      .style("fill-opacity", 1e-6)
+      .remove();
+
+  // UPDATE old elements present in new data.
+  rects.attr("class", "update")
+      .style("fill-opacity", 0.4)
+    .transition()
+      .duration(transition_duration)
+      .attr("y", function(d){return  yScale(d.AGE_GROUP_COUNT / TOTAL_RUNNERS * 100);})
+      .attr("height", function(d){return yScale(0) - yScale(d.AGE_GROUP_COUNT / TOTAL_RUNNERS * 100);});
+      //.attr("cx", function(d) { return d; });
+
+  // ENTER new elements present in new data.
+  rects.enter().append("rect")
+      .attr("class", "enter")
+      .attr("x", function(d) { return xScale(d.AGE_GROUP); })
+      .attr("width", xScale(5) - xScale(0))
+      .attr("y", yScale(0))
+      .attr("height", function(d){return 0;})//yScale(d.AGE_GROUP_COUNT * 100 / TOTAL_RUNNERS);})
+      .style("fill-opacity", 1e-6)
+    .transition()
+      .duration(transition_duration)
+      .attr("height", function(d){return yScale(0) - yScale(d.AGE_GROUP_COUNT * 100 / TOTAL_RUNNERS );})
+      .attr("y", function(d){return yScale(d.AGE_GROUP_COUNT / TOTAL_RUNNERS * 100);})
+      .style("fill-opacity", 0.4)
+      .attr("stroke","black")
+      .attr("stroke-width",1);
+
+    filtered_data = filtered_data.filter(function(d){return d.AGE_GROUP_COUNT != 0;});
+    avg_age = d3.sum(filtered_data, function(d){return d.AGE_GROUP * d.AGE_GROUP_COUNT / TOTAL_RUNNERS;});
+    avg_time = d3.sum(filtered_data, function(d){return d.AGE_GROUP_COUNT * d.AGE_GROUP_AVG_TIME / TOTAL_RUNNERS;});
+    svg.append("circle")
+      .attr("cx", xScale(avg_age))
+      .attr("cy", y_rt_Scale(avg_time))
+      .attr("r", 10)
+      .attr("stroke", "black")
+      .attr("stroke-width", 1)
+      .attr("fill", "blue")
+      .transition()
+        .duration(transition_duration)
+        .attr("fill","black")
+        .attr("r", 3);
+      
+        
+
+
+//debugger;
+};
+
+  var year = 1976;
+
+  d3.csv("age_summary.csv", 
+    function(d){ 
+      d.AGE_GROUP_COUNT = +d.AGE_GROUP_COUNT; 
+      d.YEAR = +d.YEAR; 
+      d.AGE_GROUP = +d.AGE_GROUP; 
+      d.AGE_GROUP_AVG_TIME = + d.AGE_GROUP_AVG_TIME; 
+      return d;
+    }, 
+    staging);
+
+
+
+function staging(data){
+  d3.interval(function(){
+    pre_update(data);
+}, 2000)
+};
+
+
+  function pre_update(data){
+    year += 1;
+    update(data, year);
+    console.log(year);
+    if (year == 2016){year = 1976;
+      d3.selectAll("circle").remove();}
+  };
+  //function pre_update(data){
+   // d3.interval(update(function(data){
+    //    for (ii = 1976; ii<=2016;ii++)
+    //    {
+    //      update(data, ii);
+    //    };
+    //}), 
+    //1500)};
+    
+
+    //var to_send = data.filter(function(d){return d.YEAR == 1976;});
+    //update(to_send, 1976);
+
+
+//var year = 1976;
+//d3.interval(function() {
+//  var to_send =  
+//  update([Math.random()*250,Math.random()*250, Math.random()*250, Math.random()*250]);
+//year += 1;
+//console.log(year);}, 1500);
+
+
+
+
+  </script>
+
+
+
+</html>

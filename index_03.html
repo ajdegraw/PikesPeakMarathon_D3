@@ -1,0 +1,258 @@
+<html>
+  <meta charset = "utf-8">
+  <script src="./d3.v3.min.js"></script>
+<style>
+.axis path,
+.axis line {
+  fill: none;
+  stroke: black;
+  shape-rendering: crispEdges;
+}
+
+</style>
+
+<body>
+
+
+</body>
+  <script type="text/javascript">
+  var summary_data;
+  var avg_data;
+
+    var width = 800,
+        height = 400,
+        top_margin = 75,
+        left_margin = 75,
+        bottom_margin = 75,
+        right_margin = 75,
+        canvas_top = top_margin,
+        canvas_bottom = height - bottom_margin,
+        canvas_left = left_margin,
+        canvas_right = width - right_margin;
+
+    var canvas_width = width - right_margin - left_margin;
+    var canvas_height = height - top_margin - bottom_margin;
+    var vertical_shelf = height - top_margin;
+
+    var svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
+
+    svg.append("rect")
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("fill", "rgb(224,224,224");
+
+  function display_data(data, year){
+
+    //debugger;
+    var xVar = "AGE";
+    var yVar = "COUNT";
+
+
+    var filtered_data = data.filter(function(d){return +d.YEAR == year;});
+    filtered_data.TOTAL_RUNNERS = d3.sum(filtered_data, function(d){return d.COUNT;});
+    var max_percent = d3.max(filtered_data, function(d){return d.COUNT * 100 / filtered_data.TOTAL_RUNNERS;});
+
+    //x scale axis
+    var xScale = d3.scale.linear()
+                .domain([0,100])
+//                .domain(d3.extent(data, function(d){ return d.AGE;}))
+                .range([canvas_left, canvas_right]);
+               // .range([left_margin, width - right_margin]);
+
+    var yScale = d3.scale.linear()
+                //.domain(d3.extent(data, function(d){ return d[yVar];}))
+                .domain([0,max_percent])
+                .range([canvas_bottom, canvas_top]);
+
+    var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+    var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+      //x-axis 
+      svg.append("g")
+          .attr("transform", "translate(0,"+ yScale(0)+")")
+          .attr("class", "axis")
+          .call(xAxis.ticks(10))//;
+          .append("text")
+          .attr("x", (left_margin + canvas_width) / 2)
+          .attr("y", bottom_margin / 2)
+          .text("AGE (years)");
+        //y-axis
+        svg.append("g")
+          .attr("transform", "translate("+ canvas_left +",0)")
+          .attr("class", "axis")
+          .call(yAxis.ticks(10))//;
+          .append("text")
+          .attr("x", 0)
+          .attr("y", -20)
+          .attr("transform", "translate(" + -20 + "," + yScale(1) + ")rotate(-90)")
+          .text("Percentage of Runners");
+
+
+
+      svg.selectAll("rect")
+          .data(filtered_data)
+          .enter()
+          .append("rect")
+          .attr("width", 6)
+          .attr("stroke-width", 1)
+          .attr("stroke", "black")
+          .attr("height", function(d){ return vertical_shelf - yScale(d.COUNT / filtered_data.TOTAL_RUNNERS * 100);})
+          .attr("x", function(d){ return xScale(d.AGE);})
+          .attr("y", function(d){ return yScale(d.COUNT / filtered_data.TOTAL_RUNNERS * 100);})
+          .attr("fill", "red")
+          .on("mouseover", function(d){ d3.select(this).attr("fill", "blue");})
+          .on("mouseout", function(d){ d3.select(this).attr("fill", "red");})
+          .append("svg:title")
+          .text(function(d) {return  "AGE: "+d.AGE+"\nCOUNT: "+ d.COUNT+"\nPERCENT: "+ Math.round(d.COUNT / filtered_data.TOTAL_RUNNERS * 1000) / 10 +"%" ;});
+
+
+      function make_title(){
+        svg.append("text")
+          .attr("x", xScale(0))
+          .attr("y", 30)
+          .attr("font-size", "25px")
+          .text("Pikes Peak Marathon: Distribution and Average Time (1999)");
+      };
+      make_title();
+
+
+};
+
+
+
+     
+
+
+    function plot_avg_line(data, year){
+
+        //Construct and display the average time per age
+
+          //debugger;
+    var xVar = "AGE";
+    var yVar = "COUNT";
+
+
+    var filtered_data = data.filter(function(d){return +d.YEAR == year;});
+    filtered_data.TOTAL_RUNNERS = d3.sum(filtered_data, function(d){return d.COUNT;});
+    var max_percent = d3.max(filtered_data, function(d){return d.COUNT * 100 / filtered_data.TOTAL_RUNNERS;});
+
+    //x scale axis
+    var xScale = d3.scale.linear()
+                .domain([0,100])
+//                .domain(d3.extent(data, function(d){ return d.AGE;}))
+                .range([canvas_left, canvas_right]);
+               // .range([left_margin, width - right_margin]);
+
+    var yScale = d3.scale.linear()
+                //.domain(d3.extent(data, function(d){ return d[yVar];}))
+                .domain([0,max_percent])
+                .range([canvas_bottom, canvas_top]);
+
+    var xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+    var yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+      //x-axis 
+      svg.append("g")
+          .attr("transform", "translate(0,"+ yScale(0)+")")
+          .attr("class", "axis")
+          .call(xAxis.ticks(10))//;
+          .append("text")
+          .attr("x", (left_margin + canvas_width) / 2)
+          .attr("y", bottom_margin / 2)
+          .text("AGE (years)");
+        //y-axis
+        svg.append("g")
+          .attr("transform", "translate("+ canvas_left +",0)")
+          .attr("class", "axis")
+          .call(yAxis.ticks(10))//;
+          .append("text")
+          .attr("x", 0)
+          .attr("y", -20)
+          .attr("transform", "translate(" + -20 + "," + yScale(1) + ")rotate(-90)")
+          .text("Percentage of Runners");
+
+
+      filtered_data = data.filter(function(d){ return d.YEAR == year;});
+
+
+      var year_nest = d3.nest()
+                  .key(function(d) { return d.AGE;})
+                  .rollup(function(v) { return d3.mean(v, function(d) { return +d.TOTAL; }); })
+                  .entries(filtered_data);
+
+      year_nest = year_nest.filter(function(d){ return d.values > 0;});
+
+
+    //x scale axis
+    var xScale = d3.scale.linear()
+                .domain([0,100])
+                .range([canvas_left, canvas_right]);
+
+    var y_rt_Scale = d3.scale.linear()
+                .domain([0,d3.max(year_nest, function(d){return d.values;})])
+                .range([canvas_bottom, canvas_top]);
+
+
+    var y_rt_Axis = d3.svg.axis().scale(y_rt_Scale).orient("right");
+
+
+        //y-axis
+        svg.append("g")
+          .attr("transform", "translate("+ canvas_right +",0)")
+          .attr("class", "axis")
+          .call(y_rt_Axis.ticks(10))//;
+          .append("text")
+          .attr("x", 0)
+          .attr("y", -20)
+          .attr("transform", "translate(" + 20 + "," + y_rt_Scale(8) + ")rotate(90)")
+          .text("Average Total Time (hours)");
+
+      var line = d3.svg.line()
+            .interpolate("basis") //http://www.d3noob.org/2013/01/smoothing-out-lines-in-d3js.html
+            .x(function (d){return xScale(d.key);})
+            .y(function (d){return y_rt_Scale(d.values);});
+
+
+      svg.append("path")
+        .attr("class", "avg_path")
+        .attr("d", line(year_nest))
+        .attr("stroke", "blue")
+        .attr("stroke-width", 1)
+        .attr("fill", "none");
+
+      svg.selectAll("avg_circle")
+        .data(year_nest)
+        .enter()
+        .append("circle")
+        .attr("cx", function(d){ return xScale(d.key);})
+        .attr("cy", function(d){ return y_rt_Scale(d.values);})
+        .attr("r", 2)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("fill", "blue")
+        .append("svg:title")
+        .text(function(d) {return  "AGE: "+d.key+"\nAVG_TIME: "+ Math.round(d.values * 100) / 100+" hrs";});
+  make_title();
+
+};
+
+
+  d3.csv("PP_age_summary.csv", function(d){ d.COUNT = +d.COUNT; d.YEAR = +d.YEAR; d.AGE = +d.AGE; return d;}, 
+    display_data_year);
+
+  function display_data_year(data){
+    display_data(data, 2009);
+  };
+
+  d3.csv("all_years.csv", function(d){d.AGE = +d.AGE; d.YEAR = +d.YEAR; d.TOTAL = +d.TOTAL; return d;}, display_avg_line);
+
+  function display_avg_line(data){
+    plot_avg_line(data, 2009);
+  };
+
+
+  </script>
+
+
+
+</html>

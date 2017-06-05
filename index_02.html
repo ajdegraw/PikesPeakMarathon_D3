@@ -1,0 +1,253 @@
+<html>
+	<head>	
+		<meta charset = "utf-8">
+		<style>
+		.circle {fill: "black";
+				}
+
+		.axis path,
+		.axis line {
+		    fill: none;
+		    stroke: black;
+		    shape-rendering: crispEdges;
+			}
+
+		<!-- http://chimera.labs.oreilly.com/books/1230000000345/ch08.html#_cleaning_it_up-->
+
+.axis text {
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+
+
+		</style>
+
+		<title>Pikes Peak Marathon</title>
+		<script src = "./d3.v3.min.js"> </script>
+
+		<script type = "text/javascript">
+
+		</script>
+
+
+		<script type = "text/javascript">
+		function plot_points(data) {
+			        "use strict";
+        	var margin = 100,
+            	width = 1200 - margin,
+            	height = 600 - margin;
+            var xValue = "AGE",
+            	yValue = "TOTAL";
+
+            // setup x 
+			var // data -> value should change domains to min/max of the dataset
+			    xScale = d3.scale.linear().domain([0, 85]).range([margin / 2, width - margin / 2]); 
+			    //debugger;
+      		var	xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+      		
+			// setup y
+			var  // data -> value
+    			yScale = d3.scale.linear().domain([4, 10]).range([height - margin / 2, margin / 2]) ,
+    			yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+
+
+
+			var svg = d3.select("body").append("svg")
+						.attr("width", width)
+						.attr("height", height);
+
+  			svg.append("rect")
+  				.attr("width", "100%")
+  				.attr("height", "100%")
+  				.attr("fill", "rgb(224,224,224");
+			//debugger;
+
+			var year_nest = d3.nest()
+  								.key(function(d) { return d.YEAR; })
+  								.key(function(d) { return d.AGE;})
+  								.rollup(function(v) { return d3.mean(v, function(d) { return d.TOTAL; }); })
+  								.entries(data);
+
+			//x-axis 
+			svg.append("g")
+    			.attr("transform", "translate(0,"+yScale(4.0)+")")
+    			.attr("class", "axis")
+    			.call(xAxis.ticks(10))
+    			.append("text")
+    			.attr("x", 500)
+    			.attr("y", 40)
+    			.text("Age (years)");
+    		//y-axis
+    		var ygroup = svg.append("g")
+    			.attr("transform", "translate("+margin / 2+",0)")
+    			.attr("class", "axis")
+    			.call(yAxis.ticks(10));
+    		ygroup.append("text")
+    				.attr("x", 0)
+    				.attr("y", 0) 
+    				.attr("transform", "translate(" + -35 + "," + (height/2)  + ")rotate(-90)")
+    				.text("Time (hours)");
+		
+
+    	function make_title(){
+    		svg.append("text")
+    			.attr("x", xScale(30))
+    			.attr("y", 30)
+    			.attr("font-size", "25px")
+    			.text("Pikes Peak Marathon: Average Time by Age")
+    	};
+
+    	make_title();
+
+		// plot a particular year as points
+    	function plot_update(data, year){
+    		//debugger;
+			var filtered = data.filter(function (d){ return +d.YEAR == year});
+			//debugger;
+
+			var circles2 =  svg.selectAll("circle_year")
+							.data(filtered)
+							.enter()
+							.append("circle")
+							.attr("cx", function(d) { return xScale(d.AGE)})
+							.attr("cy", function(d) { return yScale(d.TOTAL)})
+							.attr("r", 5)
+							.attr("fill", "blue");
+						};
+
+
+		//plot the avg finish time for an age per given year
+		function plot_avg_line(data, year, color){
+			//d3.selectAll(".path").remove();
+
+			var filtered = data.filter(function (d){ return +d.YEAR == year});
+			//debugger;
+			var nested = d3.nest()
+  						.key(function(d) { return d.AGE;})
+ 						.rollup(function(v) { return d3.mean(v, function(d) { return d.TOTAL; }); })
+ 						.entries(filtered);
+ 			//debugger;
+
+ 			var line = d3.svg.line()
+ 						.interpolate("basis") //http://www.d3noob.org/2013/01/smoothing-out-lines-in-d3js.html
+ 						.x(function (d){return xScale(d.key);})
+ 						.y(function (d){ return yScale(d.values);})
+
+            //debugger;
+ 			svg.append("path")
+ 				.attr("class", ".path")
+ 				.attr("d", line(nested))
+ 				.attr("stroke", color)
+ 				.attr("stroke-width", 1)
+ 				.attr("fill", "none")
+				.on("mouseover", function(d)
+					{ 
+
+						d3.select(this)
+							.attr("stroke", "black")
+							.attr("stroke-width", 3);
+						svg.append("text")
+							.attr("id", "year"+year)
+							.attr("x", xScale(60))
+							.attr("y", yScale(5))
+							.attr("font-size", 30)
+							.text(String(year)); //http://bl.ocks.org/WilliamQLiu/76ae20060e19bf42d774
+						//d3.select(this).select("text").style("visibility","visible");
+					})
+				.on("mouseout", function(d)
+					{ 
+						d3.select(this)
+							.attr("stroke", color)
+							.attr("stroke-width", 1);
+						d3.select("#year"+year)
+							.remove();
+						//d3.select(labels[0][d.key]).style("visibility","hidden");
+					});
+
+		};
+     	
+
+
+		function plot_overall_average(data){
+			//now I want to plot the overall age averag curve in a different color
+			var age_nested = d3.nest()
+  						.key(function(d) { return d.AGE;})
+ 						.rollup(function(v) { return d3.mean(v, function(d) { return d.TOTAL; }); })
+ 						.entries(data);
+ 				
+		 	var line = d3.svg.line()
+ 						.interpolate("basis") //http://www.d3noob.org/2013/01/smoothing-out-lines-in-d3js.html
+ 						.x(function (d){return xScale(d.key);})
+ 						.y(function (d){ return yScale(d.values);})
+
+            //debugger;
+ 			svg.append("path")
+ 				.attr("class", ".path")
+ 				.attr("d", line(age_nested))
+ 				.attr("stroke", "green")
+ 				.attr("stroke-width", 3)
+ 				.attr("fill", "none")
+				.on("mouseover", function(d)
+					{ 
+
+						d3.select(this)
+							.attr("stroke", "black")
+							.attr("stroke-width", 3);
+						svg.append("text")
+							.attr("id", "ALL_YEARS")
+							.attr("x", xScale(60))
+							.attr("y", yScale(2))
+							.attr("font-size", 30)
+							.text("ALL YEARS"); //http://bl.ocks.org/WilliamQLiu/76ae20060e19bf42d774
+						//d3.select(this).select("text").style("visibility","visible");
+					})
+				.on("mouseout", function(d)
+					{ 
+						d3.select(this)
+							.attr("stroke", "green")
+							.attr("stroke-width", 1);
+						d3.select("#ALL_YEARS")
+							.remove();
+						//d3.select(labels[0][d.key]).style("visibility","hidden");
+					});
+			};
+		
+     	for (var ii = 1976; ii <= 2016; ii++){	
+
+			plot_avg_line(data, ii, "rgb(168,198,247");
+
+		};
+
+		plot_overall_average(data);
+
+		
+
+	};
+		
+
+
+
+		</script>
+		</head>
+	<body>
+		<script type="text/javascript">
+
+			d3.csv("all_years.csv", function(d){
+				d.YEAR = +d.YEAR;
+				d.AGE = +d.AGE;
+				d.TOTAL = +d.TOTAL;
+				return d;
+				}, plot_points);
+
+  
+
+
+</script>
+
+
+	</body>
+
+
+</html>
